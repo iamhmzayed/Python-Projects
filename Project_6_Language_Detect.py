@@ -1,3 +1,5 @@
+#Project_6_Language_Detect
+
 from langdetect import detect
 
 a = input("What is your name ? ")
