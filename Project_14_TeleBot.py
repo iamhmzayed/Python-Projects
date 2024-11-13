@@ -1,83 +1,76 @@
 import telebot
 from dotenv import load_dotenv
+from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 import os
 
 # Load environment variables from .env file
 load_dotenv()
 
 # Access the API key
-API_TOKEN = os.getenv('API_KEY')       #APi KEY IS IN ENV 
+API_TOKEN = os.getenv('API_KEY')
 
+# Initialize bot with the API token
 bot = telebot.TeleBot(API_TOKEN)
 
-# Define command handlers
+# Define the main menu text
+menu_text = "Hello, Welcome to HAMOZA AI! Please choose an option:"
 
+# Define a function to create the main menu keyboard
+def create_main_menu():
+    markup = InlineKeyboardMarkup(row_width=1)
+    markup.add(
+        InlineKeyboardButton("Start the bot", callback_data="start"),
+        InlineKeyboardButton("About Resources", callback_data="content"),
+        InlineKeyboardButton("Contact us", callback_data="contact")
+    )
+    return markup
+
+# Command Handlers
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
-    # Send a welcome message with a menu of available commands
-    menu_text = (
-        "Hello, Welcome to HAMOZA AI! Please choose an option:\n\n"
-        "/start - Start the bot\n"
-        "/help - Show help menu\n"
-        "/content - About Resources\n"
-        "/Python - Python Note\n"
-        "/NumPy - NumPy Note\n"
-        "/Pandas - Pandas Note\n"
-        "/Matplotlib - Matplotlib Note\n"
-        "/contact - Contact us\n"
-    )
-    bot.reply_to(message, menu_text)
-
-@bot.message_handler(commands=['help'])
-def send_help(message):
-    help_text = (
-        "Here are the commands you can use:\n"
-        "/start - Start the bot\n"
-        "/help - Show help menu\n"
-        "/content - About Resources\n"
-        "/Python - Python Note\n"
-        "/NumPy - NumPy Note\n"
-        "/Pandas - Pandas Note\n"
-        "/Matplotlib - Matplotlib Note\n"
-        "/contact - Contact us\n"
-    )
-    bot.reply_to(message, help_text)
+    bot.send_message(message.chat.id, menu_text, reply_markup=create_main_menu())
 
 @bot.message_handler(commands=['content'])
 def send_content(message):
-    bot.reply_to(message, "Content:\n")
-
-@bot.message_handler(commands=['Python'])
-def send_python_note(message):
-    bot.reply_to(
-        message,
-        "Python Note Drive Link: https://drive.google.com/file/d/1yO87Ly0yrmA2qNpa7cPknGbDA2e1r5nD/view?usp=drive_link\n"
+    # Content keyboard with specific note links
+    markup = InlineKeyboardMarkup(row_width=1)
+    markup.add(
+        InlineKeyboardButton("Python Note", callback_data="Python"),
+        InlineKeyboardButton("NumPy Note", callback_data="NumPy"),
+        InlineKeyboardButton("Pandas Note", callback_data="Pandas"),
+        InlineKeyboardButton("Matplotlib Note", callback_data="Matplotlib")
     )
+    bot.send_message(message.chat.id, "Choose a resource:", reply_markup=markup)
 
-@bot.message_handler(commands=['NumPy'])
-def send_numpy_note(message):
-    bot.reply_to(
-        message,
-        "NumPy Drive Link: https://colab.research.google.com/drive/1kYo7Wj7qwhVL4z4eu8FNk8eZbS5BW3IU?usp=drive_link\n"
-    )
-
-@bot.message_handler(commands=['Pandas'])
-def send_pandas_note(message):
-    bot.reply_to(
-        message,
-        "Pandas Drive Link: https://colab.research.google.com/drive/1mPXuXHDgk3y9i5JxDS0SWRLy88s94lds?usp=drive_link\n"
-    )
-
-@bot.message_handler(commands=['Matplotlib'])
-def send_matplotlib_note(message):
-    bot.reply_to(
-        message,
-        "Matplotlib Drive Link: https://colab.research.google.com/drive/1mPXuXHDgk3y9i5JxDS0SWRLy88s94lds?usp=drive_link\n"
-    )
+# Dictionary of note links
+notes_links = {
+    'Python': "https://drive.google.com/file/d/1yO87Ly0yrmA2qNpa7cPknGbDA2e1r5nD/view?usp=drive_link",
+    'NumPy': "https://colab.research.google.com/drive/1kYo7Wj7qwhVL4z4eu8FNk8eZbS5BW3IU?usp=drive_link",
+    'Pandas': "https://colab.research.google.com/drive/1mPXuXHDgk3y9i5JxDS0SWRLy88s94lds?usp=drive_link",
+    'Matplotlib': "https://colab.research.google.com/drive/1mPXuXHDgk3y9i5JxDS0SWRLy88s94lds?usp=drive_link"
+}
 
 @bot.message_handler(commands=['contact'])
 def send_contact_info(message):
     bot.reply_to(message, "Contact us at: jayed2305101640@diu.edu.bd")
 
-# Start the bot
+# Callback handler for inline buttons
+@bot.callback_query_handler(func=lambda call: True)
+def callback_query(call):
+    if call.data == "start":
+        # Display main menu again after selecting "Start the bot"
+        bot.send_message(call.message.chat.id, menu_text, reply_markup=create_main_menu())
+    elif call.data == "content":
+        # Display content selection again after choosing "About Resources"
+        send_content(call.message)
+    elif call.data == "contact":
+        # Display contact info, then main menu again
+        send_contact_info(call.message)
+        bot.send_message(call.message.chat.id, menu_text, reply_markup=create_main_menu())
+    elif call.data in notes_links:
+        # Send the link for the selected note and display main menu again
+        bot.send_message(call.message.chat.id, f"{call.data} Note Drive Link: {notes_links[call.data]}")
+        bot.send_message(call.message.chat.id, menu_text, reply_markup=create_main_menu())
+
+# Start polling
 bot.infinity_polling()
